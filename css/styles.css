@@ -79,10 +79,19 @@ h1 { margin: 0; font-size: clamp(1.65rem, 4vw, 2.5rem); line-height: 1.1; }
 }
 
 .dashboard { width: min(1320px, 100%); margin: 0 auto; padding: 30px 24px 42px; }
+.dashboard-toolbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    margin-bottom: 12px;
+}
 .dashboard-tabs {
-    display: flex; width: fit-content; gap: 4px; margin: 0 auto 22px; padding: 4px;
+    display: flex; width: fit-content; gap: 4px; margin: 0; padding: 4px;
     border: 1px solid var(--line); border-radius: 12px; background: #fff;
 }
+.configuration-actions { display: flex; gap: 8px; }
+.configuration-actions .secondary-button { min-height: 42px; padding: 0 14px; }
+.setup-message { min-height: 1.25em; margin: 0 0 18px; color: var(--muted); text-align: right; font-size: .82rem; }
+.setup-message.success { color: var(--success); }
+.setup-message.error { color: var(--danger); }
 .location-tab {
     min-width: 116px; min-height: 42px; padding: 0 18px;
     border: 0; border-radius: 8px; background: transparent;
@@ -246,6 +255,9 @@ input:focus, select:focus {
 @media (max-width: 680px) {
     .site-header { padding: 24px 18px; }
     .dashboard { padding: 22px 14px 34px; }
+    .dashboard-toolbar { display: grid; justify-items: center; gap: 10px; }
+    .configuration-actions { width: 100%; justify-content: center; }
+    .setup-message { text-align: center; }
     .header-content { align-items: flex-start; }
     .header-status { display: none; }
     .brand { align-items: flex-start; }

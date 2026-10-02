@@ -67,6 +67,7 @@
 
         <main class="dashboard">
 
+            <div class="dashboard-toolbar">
             <div class="dashboard-tabs" role="tablist" aria-label="Commute location">
                 <button
                     type="button"
@@ -93,6 +94,13 @@
                     Work
                 </button>
             </div>
+                <div class="configuration-actions">
+                    <button type="button" id="save-setup" class="secondary-button">Save setup</button>
+                    <button type="button" id="load-setup" class="secondary-button">Load setup</button>
+                    <input type="file" id="setup-file-input" accept=".json,application/json" hidden>
+                </div>
+            </div>
+            <p id="setup-message" class="setup-message" role="status" aria-live="polite"></p>
 
             <div class="dashboard-grid">
 

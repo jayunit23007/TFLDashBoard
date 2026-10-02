@@ -1,6 +1,8 @@
 "use strict";
 
 const STORAGE_KEY = "tfl-commute-dashboard-v2";
+const BACKUP_FORMAT = "tfl-commute-dashboard";
+const BACKUP_VERSION = 1;
 const REFRESH_INTERVAL_MS = 30000;
 const TFL_API_BASE = "https://api.tfl.gov.uk";
 
@@ -47,6 +49,79 @@ function loadConfig() {
 
 function saveConfig() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+}
+
+function setSetupMessage(text, state = "") {
+    const message = document.getElementById("setup-message");
+    if (!message) return;
+    message.textContent = text;
+    message.className = `setup-message ${state}`.trim();
+}
+
+function exportSetup() {
+    const backup = {
+        format: BACKUP_FORMAT,
+        version: BACKUP_VERSION,
+        exportedAt: new Date().toISOString(),
+        config
+    };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `tfl-commute-setup-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setSetupMessage("Setup saved as a JSON file.", "success");
+}
+
+function validateSetupBackup(backup) {
+    if (!backup || backup.format !== BACKUP_FORMAT || backup.version !== BACKUP_VERSION) {
+        throw new Error("This file is not a supported commute setup backup.");
+    }
+
+    const imported = {};
+    for (const location of ["home", "work"]) {
+        const savedLocation = backup.config?.[location];
+        if (!savedLocation || !Array.isArray(savedLocation.busStops) || !Array.isArray(savedLocation.stations)) {
+            throw new Error("The setup file is missing valid Home or Work selections.");
+        }
+        const hasFields = (item, fields) => item && fields.every(field =>
+            typeof item[field] === "string" && item[field].trim()
+        );
+        if (!savedLocation.busStops.every(item => hasFields(item, ["id", "stopCode", "stopId", "name"]))) {
+            throw new Error(`The ${location} bus-stop data is invalid.`);
+        }
+        if (!savedLocation.stations.every(item => hasFields(item, ["id", "stopId", "stationName", "line", "direction"]))) {
+            throw new Error(`The ${location} station data is invalid.`);
+        }
+        imported[location] = {
+            busStops: savedLocation.busStops.map(({ id, stopCode, stopId, name }) => ({ id, stopCode, stopId, name })),
+            stations: savedLocation.stations.map(({ id, stopId, stationName, line, direction }) => ({ id, stopId, stationName, line, direction }))
+        };
+    }
+    return imported;
+}
+
+async function importSetup(file) {
+    try {
+        const backup = JSON.parse(await file.text());
+        const imported = validateSetupBackup(backup);
+        const hasCurrentSelections = ["home", "work"].some(location =>
+            config[location].busStops.length || config[location].stations.length
+        );
+        if (hasCurrentSelections && !window.confirm("Loading this setup will replace the bus stops and stations currently saved on this device. Continue?")) {
+            return;
+        }
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(imported));
+        config = imported;
+        await refreshAll();
+        setSetupMessage("Setup loaded. Home and Work selections are ready.", "success");
+    } catch (error) {
+        console.error("The commute setup could not be loaded.", error);
+        setSetupMessage(error.message || "The setup file could not be loaded.", "error");
+    }
 }
 
 function uid() {
@@ -421,6 +496,15 @@ function updateStationDirectionOptions(lineSelect, directionSelect) {
 }
 
 function registerEvents() {
+    const setupFileInput = document.getElementById("setup-file-input");
+    document.getElementById("save-setup")?.addEventListener("click", exportSetup);
+    document.getElementById("load-setup")?.addEventListener("click", () => setupFileInput?.click());
+    setupFileInput?.addEventListener("change", async () => {
+        const file = setupFileInput.files?.[0];
+        setupFileInput.value = "";
+        if (file) await importSetup(file);
+    });
+
     const tabs = Array.from(document.querySelectorAll(".location-tab"));
     tabs.forEach((tab, index) => {
         tab.addEventListener("click", () => activateLocation(tab.dataset.location));
