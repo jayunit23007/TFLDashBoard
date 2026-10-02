@@ -1,15 +1,90 @@
 {
   "format": "tfl-commute-dashboard",
   "version": 1,
-  "exportedAt": "2026-10-02T08:40:50.547Z",
+  "exportedAt": "2026-10-02T09:55:53.773Z",
   "config": {
     "home": {
-      "busStops": [],
-      "stations": []
+      "busStops": [
+        {
+          "id": "67fa0dca-7b7c-44e4-a1e2-d6a7e49b8026",
+          "stopCode": "55464",
+          "stopId": "490016072N",
+          "name": "Elmhurst Drive"
+        },
+        {
+          "id": "85c88003-37f0-469b-92f7-1fca4a4e2c4a",
+          "stopCode": "74795",
+          "stopId": "490004623S",
+          "name": "Burnway"
+        }
+      ],
+      "stations": [
+        {
+          "id": "0a8901aa-2573-404f-a3ac-ce9f9beebf39",
+          "stopId": "940GZZLUUPM",
+          "stationName": "upminster",
+          "line": "district",
+          "direction": "Westbound"
+        },
+        {
+          "id": "cb4d654b-f1b3-4892-910a-54f111bd473c",
+          "stopId": "910GEMRSPKH",
+          "stationName": "Emerson Park Rail Station",
+          "line": "london-overground",
+          "direction": "east-west"
+        }
+      ]
     },
     "work": {
-      "busStops": [],
-      "stations": []
+      "busStops": [
+        {
+          "id": "c4806967-fe01-4df6-b8e8-e32ebd4db542",
+          "stopCode": "74561",
+          "stopId": "490000115L",
+          "name": "Hornchurch Station"
+        },
+        {
+          "id": "e38d816f-0e02-4b91-97ab-adf4d96d37f2",
+          "stopCode": "52201",
+          "stopId": "490000243A",
+          "name": "Upminster Bridge Station"
+        },
+        {
+          "id": "cacd7f14-281b-4a7b-b4f0-ca008dc6d5f3",
+          "stopCode": "72658",
+          "stopId": "490015474C",
+          "name": "Upminster Stn   / St Lawrence Road"
+        },
+        {
+          "id": "a9c1654a-70f7-4d4f-a79c-babad89d361e",
+          "stopCode": "73397",
+          "stopId": "490001243Y",
+          "name": "Romford Station"
+        }
+      ],
+      "stations": [
+        {
+          "id": "4e4dac59-410f-414a-988f-ac3c094dac16",
+          "stopId": "910GFRNDXR",
+          "stationName": "farringdon",
+          "line": "elizabeth",
+          "direction": "inbound"
+        },
+        {
+          "id": "7c97671a-6195-496d-8f1e-231e1d0a259a",
+          "stopId": "940GZZLUBKF",
+          "stationName": "blackfriars",
+          "line": "district",
+          "direction": "Eastbound"
+        },
+        {
+          "id": "d8be1a10-0adc-4e0d-a447-486377739a2d",
+          "stopId": "910GROMFORD",
+          "stationName": "Romford Rail Station",
+          "line": "london-overground",
+          "direction": "Westbound"
+        }
+      ]
     }
   }
 }

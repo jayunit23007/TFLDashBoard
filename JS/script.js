@@ -105,24 +105,41 @@ function validateSetupBackup(backup) {
     return imported;
 }
 
+async function applySetupBackup(backup) {
+    const imported = validateSetupBackup(backup);
+    const hasCurrentSelections = ["home", "work"].some(location =>
+        config[location].busStops.length || config[location].stations.length
+    );
+    if (hasCurrentSelections && !window.confirm("Loading this setup will replace the bus stops and stations currently saved on this device. Continue?")) {
+        return false;
+    }
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(imported));
+    config = imported;
+    await refreshAll();
+    return true;
+}
+
 async function importSetup(file) {
     try {
         const backup = JSON.parse(await file.text());
-        const imported = validateSetupBackup(backup);
-        const hasCurrentSelections = ["home", "work"].some(location =>
-            config[location].busStops.length || config[location].stations.length
-        );
-        if (hasCurrentSelections && !window.confirm("Loading this setup will replace the bus stops and stations currently saved on this device. Continue?")) {
-            return;
-        }
-
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(imported));
-        config = imported;
-        await refreshAll();
-        setSetupMessage("Setup loaded. Home and Work selections are ready.", "success");
+        if (await applySetupBackup(backup)) setSetupMessage("Setup loaded. Home and Work selections are ready.", "success");
     } catch (error) {
         console.error("The commute setup could not be loaded.", error);
         setSetupMessage(error.message || "The setup file could not be loaded.", "error");
+    }
+}
+
+async function loadSuppliedSetup() {
+    try {
+        const response = await fetch("./tfl-commute-setup-2026-10-02.json");
+        if (!response.ok) throw new Error("The supplied commute setup file could not be loaded.");
+        if (await applySetupBackup(await response.json())) {
+            setSetupMessage("Supplied Home and Work setup loaded.", "success");
+        }
+    } catch (error) {
+        console.error("The supplied commute setup could not be loaded.", error);
+        setSetupMessage(error.message || "The supplied setup could not be loaded.", "error");
     }
 }
 
@@ -598,6 +615,7 @@ function updateStationDirectionOptions(lineSelect, directionSelect) {
 function registerEvents() {
     const setupFileInput = document.getElementById("setup-file-input");
     document.getElementById("save-setup")?.addEventListener("click", exportSetup);
+    document.getElementById("load-default-setup")?.addEventListener("click", loadSuppliedSetup);
     document.getElementById("load-setup")?.addEventListener("click", () => setupFileInput?.click());
     setupFileInput?.addEventListener("change", async () => {
         const file = setupFileInput.files?.[0];
