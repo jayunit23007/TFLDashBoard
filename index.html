@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="description"
+        content="A personal TfL dashboard showing live bus, Tube and rail arrivals for Home and Work."
+    >
+
+    <title>My Commute Dashboard</title>
+
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+
+    <div class="app-shell">
+
+        <!-- ==================================================
+             PAGE HEADER
+        =================================================== -->
+
+        <header class="site-header">
+
+            <div class="header-content">
+
+                <div class="brand">
+
+                    <div class="brand-icon" aria-hidden="true">
+                        T
+                    </div>
+
+                    <div>
+                        <p class="header-eyebrow">
+                            Live travel information
+                        </p>
+
+                        <h1>My Commute Dashboard</h1>
+
+                        <p class="header-description">
+                            Compare live bus, Tube and rail arrivals
+                            before leaving Home or Work.
+                        </p>
+                    </div>
+
+                </div>
+
+                <div class="header-status">
+                    <span class="live-indicator" aria-hidden="true"></span>
+                    <span>Live data</span>
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <!-- ==================================================
+             MAIN DASHBOARD
+        =================================================== -->
+
+        <main class="dashboard">
+
+            <div class="dashboard-grid">
+
+
+                <!-- ==========================================
+                     HOME PANEL
+                =========================================== -->
+
+                <section
+                    class="location-panel"
+                    aria-labelledby="home-heading"
+                >
+
+                    <div class="location-header">
+
+                        <div>
+                            <p class="location-label">
+                                Leaving from
+                            </p>
+
+                            <h2 id="home-heading">
+                                <span aria-hidden="true">⌂</span>
+                                Home
+                            </h2>
+                        </div>
+
+                        <span class="location-badge">
+                            Home journey
+                        </span>
+
+                    </div>
+
+
+                    <!-- HOME BUS STOP FORM -->
+
+                    <article class="transport-card">
+
+                        <div class="card-heading">
+
+                            <div>
+                                <span class="eyebrow">
+                                    Bus stops
+                                </span>
+
+                                <h3>Add a Home bus stop</h3>
+                            </div>
+
+                            <span
+                                class="transport-icon bus-icon"
+                                aria-hidden="true"
+                            >
+                                B
+                            </span>
+
+                        </div>
+
+                        <form
+                            id="home-bus-form"
+                            class="bus-stop-form"
+                            data-location="home"
+                        >
+
+                            <label for="home-stop-code">
+                                Five-digit bus stop code
+                            </label>
+
+                            <div class="input-button-row">
+
+                                <input
+                                    type="text"
+                                    id="home-stop-code"
+                                    name="homeStopCode"
+                                    inputmode="numeric"
+                                    pattern="[0-9]{5}"
+                                    maxlength="5"
+                                    placeholder="For example: 55464"
+                                    autocomplete="off"
+                                    aria-describedby="home-bus-help"
+                                    required
+                                >
+
+                                <button
+                                    type="submit"
+                                    class="primary-button"
+                                >
+                                    Add stop
+                                </button>
+
+                            </div>
+
+                            <p
+                                id="home-bus-help"
+                                class="field-help"
+                            >
+                                Use the five-digit code displayed on the
+                                TfL bus stop sign.
+                            </p>
+
+                            <p
+                                id="home-bus-message"
+                                class="form-message"
+                                role="status"
+                                aria-live="polite"
+                            ></p>
+
+                        </form>
+
+                    </article>
+
+
+                    <!-- HOME LIVE BUS ARRIVALS -->
+
+                    <article class="transport-card">
+
+                        <div class="card-heading">
+
+                            <div>
+                                <span class="eyebrow">
+                                    Live arrivals
+                                </span>
+
+                                <h3>Home bus stops</h3>
+                            </div>
+
+                            <button
+                                type="button"
+                                id="refresh-home-buses"
+                                class="icon-button"
+                                aria-label="Refresh Home bus arrivals"
+                                title="Refresh Home bus arrivals"
+                            >
+                                ↻
+                            </button>
+
+                        </div>
+
+                        <div
+                            id="home-buses"
+                            class="departures-list"
+                            aria-live="polite"
+                        >
+                            <p class="empty-message">
+                                No Home bus stops have been added.
+                            </p>
+                        </div>
+
+                    </article>
+
+
+                    <!-- HOME STATION FORM -->
+
+                    <article class="transport-card">
+
+                        <div class="card-heading">
+
+                            <div>
+                                <span class="eyebrow">
+                                    Tube and rail
+                                </span>
+
+                                <h3>Add a Home station</h3>
+                            </div>
+
+                            <span
+                                class="transport-icon train-icon"
+                                aria-hidden="true"
+                            >
+                                T
+                            </span>
+
+                        </div>
+
+                        <form
+                            id="home-station-form"
+                            class="station-form"
+                            data-location="home"
+                        >
+
+                            <label for="home-station-name">
+                                Station
+
+                                <input
+                                    type="text"
+                                    id="home-station-name"
+                                    name="homeStationName"
+                                    placeholder="For example: Hornchurch"
+                                    autocomplete="off"
+                                    required
+                                >
+                            </label>
+
+
+                            <label for="home-line">
+                                Line
+
+                                <select
+                                    id="home-line"
+                                    name="homeLine"
+                                    required
+                                >
+                                    <option value="">
+                                        Select line
+                                    </option>
+
+                                    <optgroup label="London Underground">
+                                        <option value="bakerloo">
+                                            Bakerloo
+                                        </option>
+
+                                        <option value="central">
+                                            Central
+                                        </option>
+
+                                        <option value="circle">
+                                            Circle
+                                        </option>
+
+                                        <option value="district">
+                                            District
+                                        </option>
+
+                                        <option value="hammersmith-city">
+                                            Hammersmith &amp; City
+                                        </option>
+
+                                        <option value="jubilee">
+                                            Jubilee
+                                        </option>
+
+                                        <option value="metropolitan">
+                                            Metropolitan
+                                        </option>
+
+                                        <option value="northern">
+                                            Northern
+                                        </option>
+
+                                        <option value="piccadilly">
+                                            Piccadilly
+                                        </option>
+
+                                        <option value="victoria">
+                                            Victoria
+                                        </option>
+
+                                        <option value="waterloo-city">
+                                            Waterloo &amp; City
+                                        </option>
+                                    </optgroup>
+
+                                    <optgroup label="Rail and other services">
+                                        <option value="dlr">
+                                            DLR
+                                        </option>
+
+                                        <option value="elizabeth">
+                                            Elizabeth line
+                                        </option>
+
+                                        <option value="london-overground">
+                                            London Overground
+                                        </option>
+
+                                        <option value="tram">
+                                            Tram
+                                        </option>
+                                    </optgroup>
+                                </select>
+                            </label>
+
+
+                            <label for="home-direction">
+                                Direction
+
+                                <select
+                                    id="home-direction"
+                                    name="homeDirection"
+                                    required
+                                >
+                                    <option value="">
+                                        Select direction
+                                    </option>
+
+                                    <option value="Eastbound">
+                                        Eastbound
+                                    </option>
+
+                                    <option value="Westbound">
+                                        Westbound
+                                    </option>
+
+                                    <option value="Northbound">
+                                        Northbound
+                                    </option>
+
+                                    <option value="Southbound">
+                                        Southbound
+                                    </option>
+
+                                    <option value="Clockwise">
+                                        Clockwise
+                                    </option>
+
+                                    <option value="Anti-clockwise">
+                                        Anti-clockwise
+                                    </option>
+                                </select>
+                            </label>
+
+
+                            <button
+                                type="submit"
+                                class="primary-button"
+                            >
+                                Add station
+                            </button>
+
+                            <p
+                                id="home-station-message"
+                                class="form-message"
+                                role="status"
+                                aria-live="polite"
+                            ></p>
+
+                        </form>
+
+                    </article>
+
+
+                    <!-- HOME LIVE TRAIN ARRIVALS -->
+
+                    <article class="transport-card">
+
+                        <div class="card-heading">
+
+                            <div>
+                                <span class="eyebrow">
+                                    Live departures
+                                </span>
+
+                                <h3>Home stations</h3>
+                            </div>
+
+                            <button
+                                type="button"
+                                id="refresh-home-trains"
+                                class="icon-button"
+                                aria-label="Refresh Home train arrivals"
+                                title="Refresh Home train arrivals"
+                            >
+                                ↻
+                            </button>
+
+                        </div>
+
+                        <div
+                            id="home-trains"
+                            class="departures-list"
+                            aria-live="polite"
+                        >
+                            <p class="empty-message">
+                                No Home stations have been added.
+                            </p>
+                        </div>
+
+                    </article>
+
+                </section>
+
+
+                <!-- ==========================================
+                     WORK PANEL
+                =========================================== -->
+
+                <section
+                    class="location-panel"
+                    aria-labelledby="work-heading"
+                >
+
+                    <div class="location-header">
+
+                        <div>
+                            <p class="location-label">
+                                Leaving from
+                            </p>
+
+                            <h2 id="work-heading">
+                                <span aria-hidden="true">▦</span>
+                                Work
+                            </h2>
+                        </div>
+
+                        <span class="location-badge">
+                            Work journey
+                        </span>
+
+                    </div>
+
+
+                    <!-- WORK BUS STOP FORM -->
+
+                    <article class="transport-card">
+
+                        <div class="card-heading">
+
+                            <div>
+                                <span class="eyebrow">
+                                    Bus stops
+                                </span>
+
+                                <h3>Add a Work bus stop</h3>
+                            </div>
+
+                            <span
+                                class="transport-icon bus-icon"
+                                aria-hidden="true"
+                            >
+                                B
+                            </span>
+
+                        </div>
+
+                        <form
+                            id="work-bus-form"
+                            class="bus-stop-form"
+                            data-location="work"
+                        >
+
+                            <label for="work-stop-code">
+                                Five-digit bus stop code
+                            </label>
+
+                            <div class="input-button-row">
+
+                                <input
+                                    type="text"
+                                    id="work-stop-code"
+                                    name="workStopCode"
+                                    inputmode="numeric"
+                                    pattern="[0-9]{5}"
+                                    maxlength="5"
+                                    placeholder="For example: 55464"
+                                    autocomplete="off"
+                                    aria-describedby="work-bus-help"
+                                    required
+                                >
+
+                                <button
+                                    type="submit"
+                                    class="primary-button"
+                                >
+                                    Add stop
+                                </button>
+
+                            </div>
+
+                            <p
+                                id="work-bus-help"
+                                class="field-help"
+                            >
+                                Use the five-digit code displayed on the
+                                TfL bus stop sign.
+                            </p>
+
+                            <p
+                                id="work-bus-message"
+                                class="form-message"
+                                role="status"
+                                aria-live="polite"
+                            ></p>
+
+                        </form>
+
+                    </article>
+
+
+                    <!-- WORK LIVE BUS ARRIVALS -->
+
+                    <article class="transport-card">
+
+                        <div class="card-heading">
+
+                            <div>
+                                <span class="eyebrow">
+                                    Live arrivals
+                                </span>
+
+                                <h3>Work bus stops</h3>
+                            </div>
+
+                            <button
+                                type="button"
+                                id="refresh-work-buses"
+                                class="icon-button"
+                                aria-label="Refresh Work bus arrivals"
+                                title="Refresh Work bus arrivals"
+                            >
+                                ↻
+                            </button>
+
+                        </div>
+
+                        <div
+                            id="work-buses"
+                            class="departures-list"
+                            aria-live="polite"
+                        >
+                            <p class="empty-message">
+                                No Work bus stops have been added.
+                            </p>
+                        </div>
+
+                    </article>
+
+
+                    <!-- WORK STATION FORM -->
+
+                    <article class="transport-card">
+
+                        <div class="card-heading">
+
+                            <div>
+                                <span class="eyebrow">
+                                    Tube and rail
+                                </span>
+
+                                <h3>Add a Work station</h3>
+                            </div>
+
+                            <span
+                                class="transport-icon train-icon"
+                                aria-hidden="true"
+                            >
+                                T
+                            </span>
+
+                        </div>
+
+                        <form
+                            id="work-station-form"
+                            class="station-form"
+                            data-location="work"
+                        >
+
+                            <label for="work-station-name">
+                                Station
+
+                                <input
+                                    type="text"
+                                    id="work-station-name"
+                                    name="workStationName"
+                                    placeholder="For example: Liverpool Street"
+                                    autocomplete="off"
+                                    required
+                                >
+                            </label>
+
+
+                            <label for="work-line">
+                                Line
+
+                                <select
+                                    id="work-line"
+                                    name="workLine"
+                                    required
+                                >
+                                    <option value="">
+                                        Select line
+                                    </option>
+
+                                    <optgroup label="London Underground">
+                                        <option value="bakerloo">
+                                            Bakerloo
+                                        </option>
+
+                                        <option value="central">
+                                            Central
+                                        </option>
+
+                                        <option value="circle">
+                                            Circle
+                                        </option>
+
+                                        <option value="district">
+                                            District
+                                        </option>
+
+                                        <option value="hammersmith-city">
+                                            Hammersmith &amp; City
+                                        </option>
+
+                                        <option value="jubilee">
+                                            Jubilee
+                                        </option>
+
+                                        <option value="metropolitan">
+                                            Metropolitan
+                                        </option>
+
+                                        <option value="northern">
+                                            Northern
+                                        </option>
+
+                                        <option value="piccadilly">
+                                            Piccadilly
+                                        </option>
+
+                                        <option value="victoria">
+                                            Victoria
+                                        </option>
+
+                                        <option value="waterloo-city">
+                                            Waterloo &amp; City
+                                        </option>
+                                    </optgroup>
+
+                                    <optgroup label="Rail and other services">
+                                        <option value="dlr">
+                                            DLR
+                                        </option>
+
+                                        <option value="elizabeth">
+                                            Elizabeth line
+                                        </option>
+
+                                        <option value="london-overground">
+                                            London Overground
+                                        </option>
+
+                                        <option value="tram">
+                                            Tram
+                                        </option>
+                                    </optgroup>
+                                </select>
+                            </label>
+
+
+                            <label for="work-direction">
+                                Direction
+
+                                <select
+                                    id="work-direction"
+                                    name="workDirection"
+                                    required
+                                >
+                                    <option value="">
+                                        Select direction
+                                    </option>
+
+                                    <option value="Eastbound">
+                                        Eastbound
+                                    </option>
+
+                                    <option value="Westbound">
+                                        Westbound
+                                    </option>
+
+                                    <option value="Northbound">
+                                        Northbound
+                                    </option>
+
+                                    <option value="Southbound">
+                                        Southbound
+                                    </option>
+
+                                    <option value="Clockwise">
+                                        Clockwise
+                                    </option>
+
+                                    <option value="Anti-clockwise">
+                                        Anti-clockwise
+                                    </option>
+                                </select>
+                            </label>
+
+
+                            <button
+                                type="submit"
+                                class="primary-button"
+                            >
+                                Add station
+                            </button>
+
+                            <p
+                                id="work-station-message"
+                                class="form-message"
+                                role="status"
+                                aria-live="polite"
+                            ></p>
+
+                        </form>
+
+                    </article>
+
+
+                    <!-- WORK LIVE TRAIN ARRIVALS -->
+
+                    <article class="transport-card">
+
+                        <div class="card-heading">
+
+                            <div>
+                                <span class="eyebrow">
+                                    Live departures
+                                </span>
+
+                                <h3>Work stations</h3>
+                            </div>
+
+                            <button
+                                type="button"
+                                id="refresh-work-trains"
+                                class="icon-button"
+                                aria-label="Refresh Work train arrivals"
+                                title="Refresh Work train arrivals"
+                            >
+                                ↻
+                            </button>
+
+                        </div>
+
+                        <div
+                            id="work-trains"
+                            class="departures-list"
+                            aria-live="polite"
+                        >
+                            <p class="empty-message">
+                                No Work stations have been added.
+                            </p>
+                        </div>
+
+                    </article>
+
+                </section>
+
+            </div>
+
+        </main>
+
+
+        <!-- ==================================================
+             PAGE FOOTER
+        =================================================== -->
+
+        <footer class="site-footer">
+
+            <div>
+                <span
+                    class="footer-live-indicator"
+                    aria-hidden="true"
+                ></span>
+
+                Arrivals update automatically every 30 seconds.
+            </div>
+
+            <p id="last-updated">
+                Waiting for first update.
+            </p>
+
+            <p class="data-credit">
+                Live transport data supplied by Transport for London.
+            </p>
+
+        </footer>
+
+    </div>
+
+
+    <!-- JavaScript must be loaded after the page content -->
+    <script src="js/script.js"></script>
+</body>
+</html>
