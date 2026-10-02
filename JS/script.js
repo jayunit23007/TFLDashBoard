@@ -13,6 +13,8 @@ let config = {
     home: { busStops: [], stations: [] },
     work: { busStops: [], stations: [] }
 };
+let overgroundLinesPromise;
+const overgroundRouteCache = new Map();
 
 function withApiKey(url) {
     if (!TFL_APP_KEY) return url;
@@ -330,13 +332,101 @@ function stationArrivalsUrl(station) {
     return `${TFL_API_BASE}/StopPoint/${encodeURIComponent(station.stopId)}/Arrivals`;
 }
 
+async function getOvergroundRouteInfo(station) {
+    if (overgroundRouteCache.has(station.stopId)) return overgroundRouteCache.get(station.stopId);
+    if (!overgroundLinesPromise) overgroundLinesPromise = fetchJson(`${TFL_API_BASE}/Line/Mode/overground`);
+
+    const [details, lines] = await Promise.all([
+        fetchJson(`${TFL_API_BASE}/StopPoint/${encodeURIComponent(station.stopId)}`),
+        overgroundLinesPromise
+    ]);
+    const lineIds = new Set(lines.map(line => line.id));
+    const line = (details.lines || []).find(candidate => lineIds.has(candidate.id));
+    if (!line) return null;
+
+    const route = await fetchJson(`${TFL_API_BASE}/Line/${encodeURIComponent(line.id)}/Route/Sequence/all`);
+    const info = {
+        lineId: line.id,
+        stations: route.stations || [],
+        sequences: route.stopPointSequences || []
+    };
+    overgroundRouteCache.set(station.stopId, info);
+    return info;
+}
+
+function inferOvergroundDirection(station, arrival, routeInfo) {
+    const destination = normalizeStationName(arrival.destinationName || arrival.towards || "");
+    if (!destination) return "";
+
+    for (const sequence of routeInfo.sequences) {
+        const points = sequence.stopPoint || [];
+        const terminal = points[points.length - 1];
+        if (!terminal || normalizeStationName(terminal.name || "") !== destination) continue;
+
+        const stationIndex = points.findIndex(point =>
+            point.id === station.stopId || normalizeStationName(point.name || "") === normalizeStationName(station.stationName)
+        );
+        if (stationIndex < 0) continue;
+        const fromPoint = stationIndex < points.length - 1 ? points[stationIndex] : points[stationIndex - 1];
+        const toPoint = stationIndex < points.length - 1 ? points[stationIndex + 1] : points[stationIndex];
+        const coordinatesFor = point => routeInfo.stations.find(candidate =>
+            candidate.id === point.id || normalizeStationName(candidate.name || "") === normalizeStationName(point.name || "")
+        );
+        const from = coordinatesFor(fromPoint);
+        const to = coordinatesFor(toPoint);
+        if (!from || !to || !Number.isFinite(from.lat) || !Number.isFinite(to.lat)) continue;
+
+        const latitudeChange = to.lat - from.lat;
+        const longitudeChange = to.lon - from.lon;
+        if (Math.abs(longitudeChange) >= Math.abs(latitudeChange)) {
+            return longitudeChange >= 0 ? "eastbound" : "westbound";
+        }
+        return latitudeChange >= 0 ? "northbound" : "southbound";
+    }
+    return "";
+}
+
 async function getTrainArrivals(station) {
     const arrivals = await fetchJson(stationArrivalsUrl(station));
+    const isOverground = station.line.toLowerCase() === "london-overground";
+    const routeInfo = isOverground ? await getOvergroundRouteInfo(station) : null;
     const lineMatches = arrivals.filter(item => {
+        if (isOverground) {
+            return routeInfo
+                ? item.lineId === routeInfo.lineId
+                : String(item.modeName || "").toLowerCase() === "overground";
+        }
         const value = String(item.lineId || item.lineName || "").toLowerCase();
         return value === station.line.toLowerCase() || value.includes(station.line.toLowerCase());
     });
     const directionMatchesOnly = lineMatches.filter(item => directionMatches(item, station.direction));
+    const selectedDirection = station.direction.toLowerCase();
+    const selectedDirections = selectedDirection === "east-west"
+        ? ["eastbound", "westbound"]
+        : [selectedDirection];
+    if (isOverground && routeInfo && (selectedDirection === "east-west"
+        || ["eastbound", "westbound", "northbound", "southbound"].includes(selectedDirection))) {
+        const inferred = lineMatches.map(item => ({
+            item,
+            direction: inferOvergroundDirection(station, item, routeInfo)
+        }));
+        if (selectedDirection === "east-west") {
+            return selectedDirections.flatMap(direction => inferred
+                .filter(result => directionMatches(result.item, direction) || result.direction === direction)
+                .slice(0, 6)
+                .map(result => result.item))
+                .filter(item => Number.isFinite(item.timeToStation))
+                .sort((a, b) => a.timeToStation - b.timeToStation);
+        }
+        if (inferred.some(result => result.direction)) {
+            return inferred
+                .filter(result => directionMatches(result.item, station.direction) || result.direction === station.direction.toLowerCase())
+                .map(result => result.item)
+                .filter(item => Number.isFinite(item.timeToStation))
+                .sort((a, b) => a.timeToStation - b.timeToStation)
+                .slice(0, 6);
+        }
+    }
     const isElizabethLine = station.line === "elizabeth";
     const hasExplicitElizabethDirection = isElizabethLine
         && ["inbound", "outbound"].includes(String(station.direction || "").toLowerCase());
@@ -391,8 +481,11 @@ function updateTrainLineStatus(board, station) {
 
 function stationBoardHeader(station, location) {
     const arrivalsUrl = stationArrivalsUrl(station);
+    const directionLabel = station.direction === "east-west"
+        ? "Eastbound and Westbound"
+        : titleCase(station.direction);
     return `<div class="board-header">
-        <div><h4>${escapeHtml(station.stationName)}</h4><p class="board-subtitle">${escapeHtml(titleCase(station.line))} · ${escapeHtml(station.direction)}</p><p class="line-service-status status-loading" data-line-service-status role="status">Checking service status...</p><details class="api-request"><summary>API request</summary><a href="${escapeHtml(arrivalsUrl)}" target="_blank" rel="noopener noreferrer">Open raw arrivals response</a><code>${escapeHtml(arrivalsUrl)}</code><p>Eastbound is not an API parameter; this request returns all arrivals for the StopPoint.</p></details></div>
+        <div><h4>${escapeHtml(station.stationName)}</h4><p class="board-subtitle">${escapeHtml(titleCase(station.line))} · ${escapeHtml(directionLabel)}</p><p class="line-service-status status-loading" data-line-service-status role="status">Checking service status...</p><details class="api-request"><summary>API request</summary><a href="${escapeHtml(arrivalsUrl)}" target="_blank" rel="noopener noreferrer">Open raw arrivals response</a><code>${escapeHtml(arrivalsUrl)}</code><p>Eastbound is not an API parameter; this request returns all arrivals for the StopPoint.</p></details></div>
         <div class="board-actions"><button class="secondary-button" type="button" data-refresh-station="${escapeHtml(station.id)}" data-location="${location}">Refresh</button><button class="remove-button" type="button" data-remove-station="${escapeHtml(station.id)}" data-location="${location}">Remove</button></div>
     </div>`;
 }
@@ -486,6 +579,13 @@ function updateStationDirectionOptions(lineSelect, directionSelect) {
     const previousDirection = directionSelect.value;
     const directions = lineSelect.value === "elizabeth"
         ? [["", "Select direction"], ["inbound", "Inbound"], ["outbound", "Outbound"]]
+        : lineSelect.value === "london-overground"
+        ? [
+            ["", "Select direction"], ["Eastbound", "Eastbound"],
+            ["east-west", "Eastbound and Westbound"], ["Westbound", "Westbound"],
+            ["Northbound", "Northbound"], ["Southbound", "Southbound"],
+            ["Clockwise", "Clockwise"], ["Anti-clockwise", "Anti-clockwise"]
+        ]
         : [
             ["", "Select direction"], ["Eastbound", "Eastbound"], ["Westbound", "Westbound"],
             ["Northbound", "Northbound"], ["Southbound", "Southbound"],
