@@ -5,6 +5,7 @@ const BACKUP_FORMAT = "tfl-commute-dashboard";
 const BACKUP_VERSION = 1;
 const REFRESH_INTERVAL_MS = 30000;
 const TFL_API_BASE = "https://api.tfl.gov.uk";
+const C2C_PROXY_BASE = "https://tfl-c2c-proxy.jaylooinfo.workers.dev";
 
 // Optional: add your TfL API key here for sustained use.
 const TFL_APP_KEY = "";
@@ -575,9 +576,42 @@ function updateTimestamp() {
 async function refreshAll() {
     await Promise.all([
         loadBusBoards("home"), loadBusBoards("work"),
-        loadStationBoards("home"), loadStationBoards("work")
+        loadStationBoards("home"), loadStationBoards("work"),
+        loadC2cBoards()
     ]);
     updateTimestamp();
+}
+
+async function loadC2cDirection(from, to, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = `<p class="loading-message">Loading c2c departures...</p>`;
+    try {
+        const response = await fetch(`${C2C_PROXY_BASE}/departures?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "c2c departures could not be loaded.");
+        if (!data.departures.length) {
+            container.innerHTML = `<p class="empty-message">No live c2c departures are currently reported.</p>`;
+            return;
+        }
+        container.innerHTML = `<div class="c2c-table-scroll"><table class="c2c-departures-table">
+            <thead><tr><th>Time</th><th>Service</th><th>Platform</th><th>Status</th></tr></thead>
+            <tbody>${data.departures.map(departure => {
+                const statusClass = /cancel/i.test(departure.status) ? "cancelled" : /delay|late/i.test(departure.status) ? "delayed" : "";
+                return `<tr><td>${escapeHtml(departure.time)}</td><td>${escapeHtml(departure.service)}</td><td>${escapeHtml(departure.platform || "Not listed")}</td><td class="${statusClass}">${escapeHtml(departure.status)}</td></tr>`;
+            }).join("")}</tbody>
+        </table></div>`;
+    } catch (error) {
+        console.error(`c2c departures ${from}-${to} could not be loaded.`, error);
+        container.innerHTML = `<p class="error-message">c2c departures are unavailable. Check the Worker deployment and try again.</p>`;
+    }
+}
+
+async function loadC2cBoards() {
+    await Promise.all([
+        loadC2cDirection("UPM", "FST", "home-c2c-upminster"),
+        loadC2cDirection("FST", "UPM", "home-c2c-fenchurch")
+    ]);
 }
 
 function activateLocation(location, moveFocus = false) {
@@ -658,6 +692,10 @@ function registerEvents() {
             await loadStationBoards(location); updateTimestamp();
         });
     }
+
+    document.getElementById("refresh-home-c2c")?.addEventListener("click", async () => {
+        await loadC2cBoards(); updateTimestamp();
+    });
 
     document.addEventListener("click", event => {
         const removeBus = event.target.closest("[data-remove-bus]");
