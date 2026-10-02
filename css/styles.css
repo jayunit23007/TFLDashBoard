@@ -3,6 +3,7 @@
     --tfl-blue: #0019a8;
     --tfl-blue-dark: #00136f;
     --tfl-red: #dc241f;
+    --rail-teal: #007f86;
     --ink: #101828;
     --muted: #667085;
     --line: #e4e7ec;
@@ -78,11 +79,28 @@ h1 { margin: 0; font-size: clamp(1.65rem, 4vw, 2.5rem); line-height: 1.1; }
 }
 
 .dashboard { width: min(1320px, 100%); margin: 0 auto; padding: 30px 24px 42px; }
-.dashboard-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
-.location-panel { min-width: 0; }
+.dashboard-tabs {
+    display: flex; width: fit-content; gap: 4px; margin: 0 auto 22px; padding: 4px;
+    border: 1px solid var(--line); border-radius: 12px; background: #fff;
+}
+.location-tab {
+    min-width: 116px; min-height: 42px; padding: 0 18px;
+    border: 0; border-radius: 8px; background: transparent;
+    color: var(--muted); cursor: pointer; font-weight: 800;
+}
+.location-tab[aria-selected="true"] { background: var(--tfl-blue); color: #fff; }
+.location-tab:focus-visible { outline: 3px solid #55d884; outline-offset: 2px; }
+.dashboard-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; }
+.location-panel { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr); }
+.location-panel[hidden] { display: none; }
+.transport-columns {
+    display: grid; grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start;
+}
+.transport-column { min-width: 0; }
 .location-header {
     display: flex; align-items: center; justify-content: space-between; gap: 16px;
-    margin-bottom: 14px; padding: 0 4px;
+    grid-column: 1 / -1; margin-bottom: 14px; padding: 0 4px;
 }
 .location-header h2 { margin: 0; font-size: 1.55rem; }
 .location-label { color: var(--muted); opacity: 1; }
@@ -164,6 +182,11 @@ input:focus, select:focus {
     background: #fff;
 }
 .stop-board:last-child, .station-board:last-child { margin-bottom: 0; }
+.station-board { border-color: #cde5e5; }
+.station-board .board-header { background: #f1f8f8; }
+.station-board .route-badge { background: var(--rail-teal); }
+.station-board .line-pill { background: #e2f3f2; color: #00666c; }
+.station-board .departure-time { color: var(--rail-teal); }
 .board-header {
     display: flex; align-items: flex-start; justify-content: space-between; gap: 14px;
     padding: 14px 15px; border-bottom: 1px solid #eef1f5; background: #fbfcfe;
@@ -210,7 +233,7 @@ input:focus, select:focus {
 .site-footer p { margin: 0; }
 
 @media (max-width: 980px) {
-    .dashboard-grid { grid-template-columns: 1fr; }
+    .transport-columns { grid-template-columns: 1fr; gap: 0; }
 }
 @media (max-width: 680px) {
     .site-header { padding: 24px 18px; }

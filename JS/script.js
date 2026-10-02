@@ -346,7 +346,34 @@ async function refreshAll() {
     updateTimestamp();
 }
 
+function activateLocation(location, moveFocus = false) {
+    const tabs = Array.from(document.querySelectorAll(".location-tab"));
+    for (const tab of tabs) {
+        const isActive = tab.dataset.location === location;
+        tab.setAttribute("aria-selected", String(isActive));
+        tab.tabIndex = isActive ? 0 : -1;
+        document.getElementById(tab.getAttribute("aria-controls")).hidden = !isActive;
+    }
+    if (moveFocus) document.getElementById(`${location}-tab`).focus();
+}
+
 function registerEvents() {
+    const tabs = Array.from(document.querySelectorAll(".location-tab"));
+    tabs.forEach((tab, index) => {
+        tab.addEventListener("click", () => activateLocation(tab.dataset.location));
+        tab.addEventListener("keydown", event => {
+            let nextIndex;
+            if (event.key === "ArrowRight") nextIndex = (index + 1) % tabs.length;
+            else if (event.key === "ArrowLeft") nextIndex = (index - 1 + tabs.length) % tabs.length;
+            else if (event.key === "Home") nextIndex = 0;
+            else if (event.key === "End") nextIndex = tabs.length - 1;
+            else return;
+
+            event.preventDefault();
+            activateLocation(tabs[nextIndex].dataset.location, true);
+        });
+    });
+
     for (const location of ["home", "work"]) {
         document.getElementById(`${location}-bus-form`)?.addEventListener("submit", event => {
             event.preventDefault(); addBusStop(location);

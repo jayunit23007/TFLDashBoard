@@ -67,6 +67,33 @@
 
         <main class="dashboard">
 
+            <div class="dashboard-tabs" role="tablist" aria-label="Commute location">
+                <button
+                    type="button"
+                    id="home-tab"
+                    class="location-tab"
+                    role="tab"
+                    aria-selected="true"
+                    aria-controls="home-panel"
+                    tabindex="0"
+                    data-location="home"
+                >
+                    Home
+                </button>
+                <button
+                    type="button"
+                    id="work-tab"
+                    class="location-tab"
+                    role="tab"
+                    aria-selected="false"
+                    aria-controls="work-panel"
+                    tabindex="-1"
+                    data-location="work"
+                >
+                    Work
+                </button>
+            </div>
+
             <div class="dashboard-grid">
 
 
@@ -75,8 +102,11 @@
                 =========================================== -->
 
                 <section
+                    id="home-panel"
                     class="location-panel"
-                    aria-labelledby="home-heading"
+                    role="tabpanel"
+                    aria-labelledby="home-tab"
+                    tabindex="0"
                 >
 
                     <div class="location-header">
@@ -98,6 +128,9 @@
 
                     </div>
 
+
+                    <div class="transport-columns">
+                        <section class="transport-column" aria-label="Home bus information">
 
                     <!-- HOME BUS STOP FORM -->
 
@@ -214,6 +247,8 @@
 
                     </article>
 
+                        </section>
+                        <section class="transport-column" aria-label="Home train information">
 
                     <!-- HOME STATION FORM -->
 
@@ -433,6 +468,9 @@
 
                     </article>
 
+                        </section>
+                    </div>
+
                 </section>
 
 
@@ -441,8 +479,12 @@
                 =========================================== -->
 
                 <section
+                    id="work-panel"
                     class="location-panel"
-                    aria-labelledby="work-heading"
+                    role="tabpanel"
+                    aria-labelledby="work-tab"
+                    tabindex="0"
+                    hidden
                 >
 
                     <div class="location-header">
@@ -464,6 +506,9 @@
 
                     </div>
 
+
+                    <div class="transport-columns">
+                        <section class="transport-column" aria-label="Work bus information">
 
                     <!-- WORK BUS STOP FORM -->
 
@@ -580,6 +625,8 @@
 
                     </article>
 
+                        </section>
+                        <section class="transport-column" aria-label="Work train information">
 
                     <!-- WORK STATION FORM -->
 
@@ -798,6 +845,9 @@
                         </div>
 
                     </article>
+
+                        </section>
+                    </div>
 
                 </section>
 
