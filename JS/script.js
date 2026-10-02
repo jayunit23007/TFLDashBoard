@@ -609,9 +609,17 @@ async function loadC2cDirection(from, to, containerId) {
 
 async function loadC2cBoards() {
     await Promise.all([
-        loadC2cDirection("UPM", "FST", "home-c2c-upminster"),
-        loadC2cDirection("FST", "UPM", "home-c2c-fenchurch")
+        loadC2cHome(),
+        loadC2cWork()
     ]);
+}
+
+function loadC2cHome() {
+    return loadC2cDirection("UPM", "FST", "home-c2c-upminster");
+}
+
+function loadC2cWork() {
+    return loadC2cDirection("FST", "UPM", "work-c2c-fenchurch");
 }
 
 function activateLocation(location, moveFocus = false) {
@@ -694,7 +702,10 @@ function registerEvents() {
     }
 
     document.getElementById("refresh-home-c2c")?.addEventListener("click", async () => {
-        await loadC2cBoards(); updateTimestamp();
+        await loadC2cHome(); updateTimestamp();
+    });
+    document.getElementById("refresh-work-c2c")?.addEventListener("click", async () => {
+        await loadC2cWork(); updateTimestamp();
     });
 
     document.addEventListener("click", event => {
