@@ -180,10 +180,37 @@ async function findStation(stationName, line) {
     const data = await fetchJson(`${TFL_API_BASE}/StopPoint/Search/${encodeURIComponent(stationName)}?modes=${modes}`);
     const matches = data.matches || [];
     if (!matches.length) throw new Error(`No TfL station was found for “${stationName}”.`);
-    const target = stationName.toLowerCase().replace(/\s+(station|underground|rail)$/g, "").trim();
-    return matches.find(match => (match.name || "").toLowerCase().replace(/\s+(station|underground|rail)$/g, "").trim() === target)
-        || matches.find(match => (match.modes || []).some(mode => String(mode).includes(line)))
+    const target = normalizeStationName(stationName);
+    const exactName = match => normalizeStationName(match.name || match.commonName) === target;
+    const servesLine = match => (match.modes || []).some(mode => String(mode).toLowerCase().includes(line.toLowerCase()));
+    const match = matches.find(item => exactName(item) && servesLine(item))
+        || matches.find(exactName)
+        || matches.find(servesLine)
         || matches[0];
+    return resolveLineStopPoint(match, line, stationName);
+}
+
+function normalizeStationName(name = "") {
+    return String(name).toLowerCase().replace(/(?:\s+(?:station|underground|rail))+$/g, "").trim();
+}
+
+async function resolveLineStopPoint(stopPoint, line, stationName = "") {
+    try {
+        const lineStops = await fetchJson(`${TFL_API_BASE}/Line/${encodeURIComponent(line)}/StopPoints`);
+        const target = normalizeStationName(stationName || stopPoint.name || stopPoint.commonName);
+        const lineStop = lineStops.find(item => normalizeStationName(item.commonName || item.name) === target);
+        if (lineStop) return lineStop;
+    } catch (_) {}
+
+    try {
+        const details = await fetchJson(`${TFL_API_BASE}/StopPoint/${encodeURIComponent(stopPoint.id)}`);
+        const child = (details.children || []).find(item =>
+            (item.modes || []).some(mode => String(mode).toLowerCase().includes(line.toLowerCase()))
+        );
+        return child || stopPoint;
+    } catch (_) {
+        return stopPoint;
+    }
 }
 
 async function addStation(location) {
@@ -224,8 +251,12 @@ function directionMatches(arrival, selectedDirection) {
     return description.includes(selected);
 }
 
+function stationArrivalsUrl(station) {
+    return `${TFL_API_BASE}/StopPoint/${encodeURIComponent(station.stopId)}/Arrivals`;
+}
+
 async function getTrainArrivals(station) {
-    const arrivals = await fetchJson(`${TFL_API_BASE}/StopPoint/${encodeURIComponent(station.stopId)}/Arrivals`);
+    const arrivals = await fetchJson(stationArrivalsUrl(station));
     const lineMatches = arrivals.filter(item => {
         const value = String(item.lineId || item.lineName || "").toLowerCase();
         return value === station.line.toLowerCase() || value.includes(station.line.toLowerCase());
@@ -240,8 +271,9 @@ async function getTrainArrivals(station) {
 }
 
 function stationBoardHeader(station, location) {
+    const arrivalsUrl = stationArrivalsUrl(station);
     return `<div class="board-header">
-        <div><h4>${escapeHtml(station.stationName)}</h4><p class="board-subtitle">${escapeHtml(titleCase(station.line))} · ${escapeHtml(station.direction)}</p></div>
+        <div><h4>${escapeHtml(station.stationName)}</h4><p class="board-subtitle">${escapeHtml(titleCase(station.line))} · ${escapeHtml(station.direction)}</p><details class="api-request"><summary>API request</summary><a href="${escapeHtml(arrivalsUrl)}" target="_blank" rel="noopener noreferrer">Open raw arrivals response</a><code>${escapeHtml(arrivalsUrl)}</code><p>Eastbound is not an API parameter; this request returns all arrivals for the StopPoint.</p></details></div>
         <div class="board-actions"><button class="secondary-button" type="button" data-refresh-station="${escapeHtml(station.id)}" data-location="${location}">Refresh</button><button class="remove-button" type="button" data-remove-station="${escapeHtml(station.id)}" data-location="${location}">Remove</button></div>
     </div>`;
 }
@@ -274,6 +306,14 @@ async function loadStationBoards(location) {
         container.innerHTML = `<p class="empty-message">No ${titleCase(location)} stations have been added.</p>`;
         return;
     }
+    const migrated = (await Promise.all(stations.map(async station => {
+        if (!station.stopId.startsWith("HUB")) return false;
+        const stopPoint = await resolveLineStopPoint({ id: station.stopId }, station.line, station.stationName);
+        if (stopPoint.id === station.stopId) return false;
+        station.stopId = stopPoint.id;
+        return true;
+    }))).some(Boolean);
+    if (migrated) saveConfig();
     container.innerHTML = `<p class="loading-message">Updating live train arrivals...</p>`;
     container.replaceChildren(...await Promise.all(stations.map(station => createStationBoard(station, location))));
 }

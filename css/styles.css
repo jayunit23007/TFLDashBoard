@@ -171,6 +171,10 @@ input:focus, select:focus {
 .board-header h4 { margin: 0 0 3px; font-size: 1rem; }
 .board-subtitle { margin: 0; color: var(--muted); font-size: .8rem; text-transform: capitalize; }
 .board-actions { display: flex; gap: 7px; }
+.api-request { margin-top: 7px; color: var(--muted); font-size: .78rem; }
+.api-request summary { width: fit-content; cursor: pointer; color: var(--tfl-blue); font-weight: 700; }
+.api-request a, .api-request code { display: block; margin-top: 6px; overflow-wrap: anywhere; }
+.api-request p { margin: 6px 0 0; }
 .departure-row {
     display: grid;
     grid-template-columns: 48px minmax(0, 1fr) minmax(80px, auto) auto;
