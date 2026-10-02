@@ -270,10 +270,48 @@ async function getTrainArrivals(station) {
         .slice(0, 6);
 }
 
+async function getTrainLineStatus(station) {
+    const statusUrl = station.line === "london-overground"
+        ? `${TFL_API_BASE}/Line/Mode/overground/Status`
+        : `${TFL_API_BASE}/Line/${encodeURIComponent(station.line)}/Status`;
+    const lines = await fetchJson(statusUrl);
+    const statuses = lines.flatMap(line => (line.lineStatuses || []).map(status => ({
+        ...status,
+        serviceLine: line.name
+    })))
+        .filter(status => status.statusSeverity != null && Number.isFinite(Number(status.statusSeverity)))
+        .sort((left, right) => Number(left.statusSeverity) - Number(right.statusSeverity));
+    const status = statuses[0];
+    if (!status) return null;
+
+    const severity = Number(status.statusSeverity);
+    return {
+        description: `${severity < 10 && station.line === "london-overground" ? `${status.serviceLine}: ` : ""}${status.statusSeverityDescription || "Service status unavailable"}`,
+        reason: status.reason || "",
+        tone: severity >= 10 ? "status-good" : severity >= 8 ? "status-warning" : "status-disrupted"
+    };
+}
+
+function updateTrainLineStatus(board, station) {
+    getTrainLineStatus(station).then(status => {
+        const element = board.querySelector("[data-line-service-status]");
+        if (!element) return;
+        element.textContent = status?.description || "Service status unavailable";
+        element.className = `line-service-status ${status?.tone || "status-unavailable"}`;
+        if (status?.reason) element.title = status.reason;
+    }).catch(error => {
+        console.warn("Train line service status could not be loaded.", error);
+        const element = board.querySelector("[data-line-service-status]");
+        if (!element) return;
+        element.textContent = "Service status unavailable";
+        element.className = "line-service-status status-unavailable";
+    });
+}
+
 function stationBoardHeader(station, location) {
     const arrivalsUrl = stationArrivalsUrl(station);
     return `<div class="board-header">
-        <div><h4>${escapeHtml(station.stationName)}</h4><p class="board-subtitle">${escapeHtml(titleCase(station.line))} · ${escapeHtml(station.direction)}</p><details class="api-request"><summary>API request</summary><a href="${escapeHtml(arrivalsUrl)}" target="_blank" rel="noopener noreferrer">Open raw arrivals response</a><code>${escapeHtml(arrivalsUrl)}</code><p>Eastbound is not an API parameter; this request returns all arrivals for the StopPoint.</p></details></div>
+        <div><h4>${escapeHtml(station.stationName)}</h4><p class="board-subtitle">${escapeHtml(titleCase(station.line))} · ${escapeHtml(station.direction)}</p><p class="line-service-status status-loading" data-line-service-status role="status">Checking service status...</p><details class="api-request"><summary>API request</summary><a href="${escapeHtml(arrivalsUrl)}" target="_blank" rel="noopener noreferrer">Open raw arrivals response</a><code>${escapeHtml(arrivalsUrl)}</code><p>Eastbound is not an API parameter; this request returns all arrivals for the StopPoint.</p></details></div>
         <div class="board-actions"><button class="secondary-button" type="button" data-refresh-station="${escapeHtml(station.id)}" data-location="${location}">Refresh</button><button class="remove-button" type="button" data-remove-station="${escapeHtml(station.id)}" data-location="${location}">Remove</button></div>
     </div>`;
 }
@@ -296,6 +334,7 @@ async function createStationBoard(station, location) {
         console.error(error);
         board.innerHTML = `${stationBoardHeader(station, location)}<p class="error-message">Live departures could not be loaded. Check the station and line selection.</p>`;
     }
+    updateTrainLineStatus(board, station);
     return board;
 }
 

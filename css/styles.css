@@ -193,6 +193,14 @@ input:focus, select:focus {
 }
 .board-header h4 { margin: 0 0 3px; font-size: 1rem; }
 .board-subtitle { margin: 0; color: var(--muted); font-size: .8rem; text-transform: capitalize; }
+.line-service-status {
+    display: inline-flex; max-width: 100%; margin: 7px 0 0; padding: 3px 8px;
+    border-radius: 999px; font-size: .74rem; font-weight: 800; line-height: 1.4;
+}
+.status-loading, .status-unavailable { background: #f2f4f7; color: #475467; }
+.status-good { background: #ecfdf3; color: #067647; }
+.status-warning { background: #fffaeb; color: #b54708; }
+.status-disrupted { background: #fff1f2; color: #b42318; }
 .board-actions { display: flex; gap: 7px; }
 .api-request { margin-top: 7px; color: var(--muted); font-size: .78rem; }
 .api-request summary { width: fit-content; cursor: pointer; color: var(--tfl-blue); font-weight: 700; }
