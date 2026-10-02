@@ -15,6 +15,8 @@ let config = {
     work: { busStops: [], stations: [] }
 };
 let overgroundLinesPromise;
+let collapseSectionSequence = 0;
+const collapsedSectionKeys = new Set();
 const overgroundRouteCache = new Map();
 
 function withApiKey(url) {
@@ -170,6 +172,58 @@ function setMessage(location, type, text, state = "") {
     element.className = `form-message ${state}`.trim();
 }
 
+function setupCollapsibleSection(section) {
+    const heading = section.querySelector(":scope > .card-heading, :scope > .board-header");
+    if (!heading || heading.querySelector("[data-collapse-toggle]")) return;
+
+    let body = section.querySelector(":scope > .collapsible-content");
+    if (!body) {
+        body = document.createElement("div");
+        body.className = "collapsible-content";
+        body.id = `collapsible-content-${++collapseSectionSequence}`;
+        for (const child of Array.from(section.children)) {
+            if (child !== heading) body.append(child);
+        }
+        section.append(body);
+    }
+
+    if (!section.dataset.collapseKey) {
+        section.dataset.collapseKey = section.dataset.busId
+            ? `bus-${section.dataset.busId}`
+            : section.dataset.stationId
+                ? `station-${section.dataset.stationId}`
+                : `section-${collapseSectionSequence}`;
+    }
+    const key = section.dataset.collapseKey;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "icon-button collapse-toggle";
+    button.dataset.collapseToggle = "";
+    button.setAttribute("aria-controls", body.id);
+    button.setAttribute("aria-expanded", String(!collapsedSectionKeys.has(key)));
+    button.setAttribute("aria-label", collapsedSectionKeys.has(key) ? "Expand section" : "Collapse section");
+    button.title = button.getAttribute("aria-label");
+    button.textContent = collapsedSectionKeys.has(key) ? "+" : "−";
+    body.hidden = collapsedSectionKeys.has(key);
+    button.addEventListener("click", () => {
+        const isExpanded = button.getAttribute("aria-expanded") === "true";
+        body.hidden = isExpanded;
+        button.setAttribute("aria-expanded", String(!isExpanded));
+        button.setAttribute("aria-label", isExpanded ? "Expand section" : "Collapse section");
+        button.title = button.getAttribute("aria-label");
+        button.textContent = isExpanded ? "+" : "−";
+        if (isExpanded) collapsedSectionKeys.add(key);
+        else collapsedSectionKeys.delete(key);
+    });
+
+    const actions = heading.querySelector(":scope > .board-actions");
+    (actions || heading).append(button);
+}
+
+function setupCollapsibleSections(root = document) {
+    root.querySelectorAll(".transport-card, .stop-board, .station-board").forEach(setupCollapsibleSection);
+}
+
 /* A five-digit SMS stop code is not the same as a NaPTAN StopPoint ID.
    Search is used to resolve the code, then the StopPoint ID is stored. */
 async function findBusStop(stopCode) {
@@ -256,6 +310,7 @@ async function createBusBoard(stop, location) {
         console.error(error);
         board.innerHTML = `${busBoardHeader(stop, location)}<p class="error-message">Live arrivals could not be loaded.</p>`;
     }
+    setupCollapsibleSection(board);
     return board;
 }
 
@@ -531,6 +586,7 @@ async function createStationBoard(station, location) {
         board.innerHTML = `${stationBoardHeader(station, location)}<p class="error-message">Live departures could not be loaded. Check the station and line selection.</p>`;
     }
     updateTrainLineStatus(board, station);
+    setupCollapsibleSection(board);
     return board;
 }
 
@@ -722,6 +778,7 @@ function registerEvents() {
 
 function initialise() {
     loadConfig();
+    setupCollapsibleSections();
     registerEvents();
     refreshAll();
     window.setInterval(refreshAll, REFRESH_INTERVAL_MS);

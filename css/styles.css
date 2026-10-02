@@ -127,6 +127,8 @@ h1 { margin: 0; font-size: clamp(1.65rem, 4vw, 2.5rem); line-height: 1.1; }
     display: flex; align-items: flex-start; justify-content: space-between;
     gap: 16px; margin-bottom: 16px;
 }
+.collapse-toggle { flex: 0 0 38px; font-size: 1.15rem; line-height: 1; }
+.collapsible-content[hidden] { display: none; }
 .card-heading h3 { margin: 0; font-size: 1.08rem; }
 .eyebrow {
     display: block; margin-bottom: 3px;
