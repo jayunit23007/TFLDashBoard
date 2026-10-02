@@ -238,6 +238,18 @@ input:focus, select:focus {
 .departure-destination span, .departure-platform { color: var(--muted); font-size: .78rem; }
 .departure-platform { text-align: right; }
 .departure-time { color: var(--tfl-blue); font-size: 1.15rem; font-weight: 900; white-space: nowrap; }
+.c2c-directions { display: grid; min-width: 0; gap: 16px; }
+.c2c-direction + .c2c-direction { padding-top: 14px; border-top: 1px solid var(--line); }
+.c2c-direction { min-width: 0; }
+.c2c-direction h4 { margin: 0 0 8px; font-size: .9rem; }
+.c2c-table-scroll { max-width: 100%; min-width: 0; overflow-x: auto; }
+.c2c-departures-table { width: 100%; min-width: 410px; border-collapse: collapse; font-size: .78rem; }
+.c2c-departures-table th, .c2c-departures-table td { padding: 8px 6px; border-bottom: 1px solid #eef1f5; text-align: left; }
+.c2c-departures-table th { background: #f7f8fa; color: var(--muted); font-size: .7rem; font-weight: 800; }
+.c2c-departures-table td:first-child { font-weight: 850; white-space: nowrap; }
+.c2c-departures-table td:last-child { white-space: nowrap; }
+.c2c-departures-table .cancelled { color: var(--danger); font-weight: 800; }
+.c2c-departures-table .delayed { color: #b54708; font-weight: 800; }
 .empty-message, .loading-message, .error-message { margin: 0; padding: 14px 3px; color: var(--muted); }
 .error-message { color: var(--danger); }
 
