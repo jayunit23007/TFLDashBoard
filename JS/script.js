@@ -262,9 +262,15 @@ async function getTrainArrivals(station) {
         return value === station.line.toLowerCase() || value.includes(station.line.toLowerCase());
     });
     const directionMatchesOnly = lineMatches.filter(item => directionMatches(item, station.direction));
+    const isElizabethLine = station.line === "elizabeth";
+    const hasExplicitElizabethDirection = isElizabethLine
+        && ["inbound", "outbound"].includes(String(station.direction || "").toLowerCase());
     // TfL does not always expose a compass direction. Prefer exact direction matches;
     // otherwise show line-matched services and expose platform/destination to the user.
-    return (directionMatchesOnly.length ? directionMatchesOnly : lineMatches)
+    const selectedArrivals = isElizabethLine
+        ? hasExplicitElizabethDirection ? directionMatchesOnly : []
+        : directionMatchesOnly.length ? directionMatchesOnly : lineMatches;
+    return selectedArrivals
         .filter(item => Number.isFinite(item.timeToStation))
         .sort((a, b) => a.timeToStation - b.timeToStation)
         .slice(0, 6);
@@ -323,13 +329,17 @@ async function createStationBoard(station, location) {
     board.innerHTML = `${stationBoardHeader(station, location)}<p class="loading-message">Loading live departures...</p>`;
     try {
         const arrivals = await getTrainArrivals(station);
+        const needsElizabethDirectionUpdate = station.line === "elizabeth"
+            && !["inbound", "outbound"].includes(String(station.direction || "").toLowerCase());
         board.innerHTML = stationBoardHeader(station, location) + (arrivals.length ? arrivals.map(train => `
             <div class="departure-row">
                 <div class="route-badge">${escapeHtml((train.lineName || titleCase(station.line)).slice(0, 3))}</div>
                 <div class="departure-destination"><strong>${escapeHtml(train.destinationName || train.towards || "Destination unavailable")}</strong><span>${escapeHtml(train.currentLocation || train.towards || "Live prediction")}</span><span class="line-pill">${escapeHtml(titleCase(station.line))}</span></div>
                 <div class="departure-platform">${escapeHtml(train.platformName || "Platform unavailable")}</div>
                 <div class="departure-time">${formatMinutes(train.timeToStation)}</div>
-            </div>`).join("") : `<p class="empty-message">No live ${escapeHtml(station.direction)} departures are currently reported for this line.</p>`);
+            </div>`).join("") : needsElizabethDirectionUpdate
+                ? `<p class="error-message">This saved Elizabeth line selection uses the old direction setting. Remove and re-add it, then choose Inbound or Outbound.</p>`
+                : `<p class="empty-message">No live ${escapeHtml(station.direction)} departures are currently reported for this line.</p>`);
     } catch (error) {
         console.error(error);
         board.innerHTML = `${stationBoardHeader(station, location)}<p class="error-message">Live departures could not be loaded. Check the station and line selection.</p>`;
@@ -396,6 +406,20 @@ function activateLocation(location, moveFocus = false) {
     if (moveFocus) document.getElementById(`${location}-tab`).focus();
 }
 
+function updateStationDirectionOptions(lineSelect, directionSelect) {
+    if (!lineSelect || !directionSelect) return;
+    const previousDirection = directionSelect.value;
+    const directions = lineSelect.value === "elizabeth"
+        ? [["", "Select direction"], ["inbound", "Inbound"], ["outbound", "Outbound"]]
+        : [
+            ["", "Select direction"], ["Eastbound", "Eastbound"], ["Westbound", "Westbound"],
+            ["Northbound", "Northbound"], ["Southbound", "Southbound"],
+            ["Clockwise", "Clockwise"], ["Anti-clockwise", "Anti-clockwise"]
+        ];
+    directionSelect.replaceChildren(...directions.map(([value, label]) => new Option(label, value)));
+    if (directions.some(([value]) => value === previousDirection)) directionSelect.value = previousDirection;
+}
+
 function registerEvents() {
     const tabs = Array.from(document.querySelectorAll(".location-tab"));
     tabs.forEach((tab, index) => {
@@ -414,6 +438,11 @@ function registerEvents() {
     });
 
     for (const location of ["home", "work"]) {
+        const lineSelect = document.getElementById(`${location}-line`);
+        const directionSelect = document.getElementById(`${location}-direction`);
+        lineSelect?.addEventListener("change", () => updateStationDirectionOptions(lineSelect, directionSelect));
+        updateStationDirectionOptions(lineSelect, directionSelect);
+
         document.getElementById(`${location}-bus-form`)?.addEventListener("submit", event => {
             event.preventDefault(); addBusStop(location);
         });
